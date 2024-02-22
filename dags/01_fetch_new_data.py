@@ -3,6 +3,7 @@
 import airflow.utils.dates
 from airflow import DAG
 from airflow.operators.python import PythonOperator
+from airflow.operators.email import EmailOperator
 from airflow.operators.dummy import DummyOperator
 from airflow.models import Variable
 import csv 
@@ -12,7 +13,6 @@ import requests
 import requests.exceptions as requests_exceptions
 import pandas as pd
 import os
- 
 
 default_args = {
     'owner': 'airflow',
@@ -26,13 +26,11 @@ default_args = {
     'email_body': 'The following task has failed: {{ task.task_id }}',  # Specify the email body
 }
  
-
 dag = DAG(
     dag_id="01_fetch_new_data",
     description="Responsible for fetching the daily new data from multiple sources",
     start_date=airflow.utils.dates.days_ago(1),
     schedule_interval="@once",
-   
 )
 
 # For each csv file I need to :
@@ -97,11 +95,21 @@ def _verify_hash(**context):
         return 'new_data'
 
  
-ensure_success = PythonOperator(
+ensure_success = DummyOperator(
     task_id='ensure_success_task',
-    trigger_rule='all_success'
-
+    trigger_rule='all_success',
+    dag=dag
 )
+
+ # Créer une tâche pour envoyer un email si la tâche ensure_success ne se termine pas avec succès
+send_email_on_fail = EmailOperator(
+    task_id='send_email_on_fail_task',
+    to='antoine.rsw@gmail.com',
+    subject='[NOTIFICATION] Data source could not be retrieved',
+    html_content='Please check the logs for more information.',
+    trigger_rule='one_failed',
+    dag=dag
+    )
 
 for csv_url, previous_hash, file_name in   [
     (appointments_by_center_ds, previous_hash_appointments_by_center_ds, 'appointments_by_center_ds'),
@@ -124,6 +132,6 @@ for csv_url, previous_hash, file_name in   [
         dag=dag,
     )
 
-    fetch_data_task >> verify_hash_task >> ensure_success
+    fetch_data_task >> verify_hash_task   >> ensure_success >> send_email_on_fail
 
  
