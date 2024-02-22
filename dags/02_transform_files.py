@@ -23,7 +23,7 @@ dag = DAG(
     dag_id="02_transform_files",
     description="Responsible for transforming data from staging folder",
     start_date=airflow.utils.dates.days_ago(1),
-    schedule_interval="@daily",
+    schedule_interval="@once",
 )
 
 #Read the file and get the separator

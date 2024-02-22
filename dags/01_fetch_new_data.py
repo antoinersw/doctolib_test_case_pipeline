@@ -101,7 +101,8 @@ ensure_success = DummyOperator(
     dag=dag
 )
 
- # Créer une tâche pour envoyer un email si la tâche ensure_success ne se termine pas avec succès
+# Créer une tâche pour envoyer un email si la tâche ensure_success ne se termine pas avec succès 
+# https://hevodata.com/learn/airflow-emailoperator/
 send_email_on_fail = EmailOperator(
     task_id='send_email_on_fail_task',
     to='antoine.rsw@gmail.com',
