@@ -58,10 +58,10 @@ with DAG(
     refresh_powerbi_dataset = DummyOperator(
         task_id='refresh_powerbi_dataset_task'
         ,dag=dag
-        # At the end of the pipeline we could add a task or another DAG to trigger power bi dataset to refresh.
+        # At the end of the pipeline we could add a task or another DAG to trigger power bi dataset to refresh. This would guarantee great SLAs !
         # Since I wont host that docker implementation of that pipeline I won't implement that hook
         # https://github.com/christo-olivier/airflow_powerbi_plugin/blob/master/powerbi_plugin/hooks/powerbi_hook.py
     )
   
 
-    create_dim_date >> create_overload_appointment_monitoring >> create_aggreg_count_vax
+    create_dim_date >> create_overload_appointment_monitoring >> create_aggreg_count_vax >> refresh_powerbi_dataset
