@@ -4,8 +4,8 @@ dags/__pycache__/
 # Ignore all files in the dags/scheduler folder
 dags/scheduler/*
 
-# Ignore all files in the data/processed folder
-data/processed/*.csv
+# Ignore all files in the data/transformed folder
+data/transformed/*.csv
 
 # Ignore all files in the data/staging folder
 data/staging/*.csv

@@ -1,4 +1,4 @@
  COPY vaccination_vs_appointments(id,id_centre, date_debut_semaine, code_region, nom_region, code_departement, nom_departement, commune_insee, nom_centre, nombre_ucd, doses_allouees, rdv_pris) 
-        FROM '/opt/data/processed/vaccination_vs_appointment_ds.csv' 
+        FROM '/opt/data/transformed/vaccination_vs_appointment_ds.csv' 
             DELIMITER ',' 
             CSV HEADER; 

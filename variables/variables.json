@@ -6,5 +6,6 @@
     "previous_hash_vaccination_vs_appointment_ds": "True",
     "previous_hash_vaccination_centers_ds": "True",
     "previous_hash_appointments_by_center_ds": "True",
-    "previous_hash_vaccination_stock_ds": "True"
+    "previous_hash_vaccination_stock_ds": "True",
+    "load_type":"increment"
 }

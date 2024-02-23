@@ -6,6 +6,6 @@
     , libelle_pui
     , finess
     , type_de_vaccin, nb_ucd, nb_doses, date)
-        FROM '/opt/data/processed/vaccination_stock_ds.csv'
+        FROM '/opt/data/transformed/vaccination_stock_ds.csv'
             DELIMITER ','
             CSV HEADER; 
