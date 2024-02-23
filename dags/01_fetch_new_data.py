@@ -8,7 +8,8 @@ import csv
 import pathlib
 import hashlib
 import requests
-import requests.exceptions as requests_exceptions
+from airflow.models import XCom
+from airflow.exceptions import AirflowException
 import pandas as pd
 import os
 
@@ -23,7 +24,7 @@ with DAG(
     description="Responsible for fetching the daily new data from multiple sources",
     start_date=airflow.utils.dates.days_ago(1),
     schedule_interval="@once",
-    default_args=default_args
+    default_args=default_args,
 ) as dag:
 
     # For each csv file I need to :
@@ -57,10 +58,12 @@ with DAG(
         "previous_hash_vaccination_stock_ds"
     )
 
-    def _fetch_data(**context):
-        # Function to retrieve data from the CSV file
-        csv_url = context["csv_url"]
-        header = {"Content-Type": "text/csv; charset=utf-8"}
+
+def _fetch_data(**context):
+    # Function to retrieve data from the CSV file
+    csv_url = context["csv_url"]
+    header = {"Content-Type": "text/csv; charset=utf-8"}
+    try:
         response = requests.get(csv_url, headers=header)
         response.encoding = "utf-8"
         csv_content = response.text
@@ -71,6 +74,24 @@ with DAG(
         file_path = os.path.join(folder_path, file_name)
         with open(file_path, "w", encoding="utf-8") as f:
             f.write(csv_content)
+
+    except requests.exceptions.RequestException as e:
+        # If there is an error, the XCom variable is incremented
+        task_id = context["task_instance"].task_id
+        current_count = XCom.get_one(
+            key=f"failed_task_count_{task_id}", execution_date=context["execution_date"]
+        )
+        if current_count is None:
+            current_count = 0
+        new_count = current_count + 1
+        XCom.set(
+            key=f"failed_task_count_{task_id}",
+            value=new_count,
+            execution_date=context["execution_date"],
+        )
+
+        # Raise an exception with the error message
+        raise AirflowException(f"Failed to fetch data from {csv_url}: {str(e)}")
 
     def _verify_hash(**context):
         # Function to compare the hash of the retrieved data with the previous hash
@@ -115,22 +136,22 @@ with DAG(
         (
             appointments_by_center_ds,
             previous_hash_appointments_by_center_ds,
-            "appointments_by_center_ds",
+            "appointments_by_center_ds_1",
         ),
         (
             vaccination_centers_ds,
             previous_hash_vaccination_centers_ds,
-            "vaccination_centers_ds",
+            "vaccination_centers_ds_2",
         ),
         (
             vaccination_stock_ds,
             previous_hash_vaccination_stock_ds,
-            "vaccination_stock_ds",
+            "vaccination_stock_ds_3",
         ),
         (
             vaccination_vs_appointment_ds,
             previous_hash_vaccination_vs_appointment_ds,
-            "vaccination_vs_appointment_ds",
+            "vaccination_vs_appointment_ds_4",
         ),
     ]:
         fetch_data_task = PythonOperator(
@@ -148,4 +169,4 @@ with DAG(
             dag=dag,
         )
 
-        fetch_data_task >> verify_hash_task >> ensure_success >> send_email_on_fail
+        fetch_data_task >> verify_hash_task >> ensure_success

@@ -14,11 +14,11 @@ default_args = {
 }
 
 with DAG(
-    dag_id="03_copy_to_postgres",
+    "03_copy_to_postgres",
     description="Responsible for creating and copying tables to postgres",
     start_date=airflow.utils.dates.days_ago(1),
     schedule_interval="@once",
-    default_args=default_args
+    default_args=default_args,
 ) as dag:
 
     # Poke for files in transformed folder
@@ -64,8 +64,11 @@ with DAG(
             dag=dag,
         )
 
-        # Delete files after being copied
-        # INFO Instead of deleting the files,
-        delete_transformed_data = PythonOperator(task_id="delete_transformed_data_task")
+        # Archive files after being copied with date as suffix
+        archive_transformed_data = PythonOperator(
+            task_id="archive_transformed_data_task"
+        )
 
-        poke_for_transformed_files >> create_tables >> copy_tables
+        (
+            poke_for_transformed_files >> create_tables >> copy_tables
+        )  # >>archive_transformed_data

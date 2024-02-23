@@ -9,11 +9,11 @@ import requests
 import requests.exceptions as requests_exceptions
 import pandas as pd
 import os
-import chardet
+
 
  
 with DAG(
-    dag_id="02_transform_files",
+  "02_transform_files",
     description="Responsible for transforming data from staging folder",
     start_date=airflow.utils.dates.days_ago(1),
     schedule_interval="@once",
@@ -31,9 +31,9 @@ with DAG(
         return None
 
     #
-    def _process_all_csv():
+    def _transform_all_csv():
         staging_folder_path = "data/staging"
-        process_folder_path = "data/transformed"
+        transform_folder_path = "data/transformed"
         # Get the list of csv files in the folder
         csv_files = [
             file for file in os.listdir(staging_folder_path) if file.endswith(".csv")
@@ -41,13 +41,13 @@ with DAG(
         # Print the content of each csv file
         for file in csv_files:
             staging_file_path = os.path.join(staging_folder_path, file)
-            process_file_path = os.path.join(process_folder_path, file)
+            transform_file_path = os.path.join(transform_folder_path, file)
             df = pd.read_csv(staging_file_path, sep=get_separator(staging_file_path))
             df.to_csv(
-                process_file_path, sep=",", encoding="utf-8", quoting=csv.QUOTE_STRINGS
+                transform_file_path, sep=",", encoding="utf-8", quoting=csv.QUOTE_STRINGS
             )
 
-    # Listen to the external task from DAG 01
+    # Listen to the external task from DAG 01 and trigger on success
     sense_previous_dag_execution = ExternalTaskSensor(
         task_id="sense_previous_dag_execution_task",
         external_dag_id="01_fetch_new_data",
@@ -57,12 +57,12 @@ with DAG(
 
     # Normalize the csv and move it to the transformed folder
     # TODO Améliorer largement le process de cleaning
-    process_all_csv = PythonOperator(
-        task_id="process_all_csv_task",
-        python_callable=_process_all_csv,
+    transform_all_csv = PythonOperator(
+        task_id="transform_all_csv_task",
+        python_callable=_transform_all_csv,
         dag=dag,
     )
 
     # Verifier que l'on a tous les fichiers que l'on veut
 
-    sense_previous_dag_execution >> process_all_csv
+    sense_previous_dag_execution >> transform_all_csv
