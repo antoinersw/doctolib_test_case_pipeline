@@ -1,23 +1,28 @@
-import airflow.utils.dates
+from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.python import PythonOperator
-from airflow.operators.dummy import DummyOperator
+
 from airflow.sensors.external_task import ExternalTaskSensor
 from airflow.models import Variable
 import csv
-import requests
-import requests.exceptions as requests_exceptions
+
+
 import pandas as pd
 import os
 
+default_args = {
+    "owner": "airflow",
+    "depends_on_past": False,
+    "retries": 0,
+}
 
- 
+
 with DAG(
-  "02_transform_files",
-    description="Responsible for transforming data from staging folder",
-    start_date=airflow.utils.dates.days_ago(1),
+    "02_transform_files",
+    description="Responsible for fetching the daily new data from multiple sources",
+    start_date=datetime(2024, 2, 22),
     schedule_interval="@once",
- 
+    default_args=default_args,
 ) as dag:
 
     # Read the file and get the separator
@@ -30,7 +35,6 @@ with DAG(
                 return separator
         return None
 
-    #
     def _transform_all_csv():
         staging_folder_path = "data/staging"
         transform_folder_path = "data/transformed"
@@ -43,8 +47,12 @@ with DAG(
             staging_file_path = os.path.join(staging_folder_path, file)
             transform_file_path = os.path.join(transform_folder_path, file)
             df = pd.read_csv(staging_file_path, sep=get_separator(staging_file_path))
+
             df.to_csv(
-                transform_file_path, sep=",", encoding="utf-8", quoting=csv.QUOTE_STRINGS
+                transform_file_path,
+                sep=",",
+                encoding="utf-8",
+                quoting=csv.QUOTE_MINIMAL,
             )
 
     # Listen to the external task from DAG 01 and trigger on success

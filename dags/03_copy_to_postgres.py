@@ -1,16 +1,18 @@
 import airflow.utils.dates
+from airflow.decorators import task
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
 from airflow.sensors.filesystem import FileSensor
+from airflow.exceptions import AirflowException
 import os
+import shutil
 
 default_args = {
     "owner": "airflow",
     "depends_on_past": False,
     "start_date": airflow.utils.dates.days_ago(1),
-    "email_on_failure": True,
-    "email_on_retry": False,
+ 
 }
 
 with DAG(
@@ -42,7 +44,20 @@ with DAG(
                 csv_filenames.append(filename.split("_ds.csv")[0])
         return csv_filenames
 
+    # def move_to_archive(filename):
+    #     transformed_path = "data/transformed"
+    #     archive_path = "data/archived"
+    #     print("files are",os.listdir(transformed_path))
+    #     try:
+    #         shutil.move(os.path.join(transformed_path, f"{filename}.csv"), archive_path)
+    #     except FileNotFoundError:
+          
+    #         raise AirflowException(f"File '{filename}.csv' not found in '{transformed_path}'")
+    
+
     for filename in get_csv_filename("data/transformed"):
+
+        
 
         # CREATE tables if exists
         create_tables = SQLExecuteQueryOperator(
@@ -54,6 +69,8 @@ with DAG(
             dag=dag,
         )
 
+        # Contrôler que le nombre de lignes a augmenter ?
+
         # COPY files to postgres database
         copy_tables = SQLExecuteQueryOperator(
             task_id=f"copy_{filename}_task",
@@ -64,11 +81,19 @@ with DAG(
             dag=dag,
         )
 
+        # Contrôler que le nombre de lignes a augmenter ?
+
         # Archive files after being copied with date as suffix
-        archive_transformed_data = PythonOperator(
-            task_id="archive_transformed_data_task"
-        )
+        # archive_transformed_data = PythonOperator(
+        #     task_id=f"archive_transformed_data_task_{filename}",
+        #     python_callable=move_to_archive,
+        #     op_kwargs={"filename": filename},
+        #     dag=dag,
+        # )
 
         (
-            poke_for_transformed_files >> create_tables >> copy_tables
-        )  # >>archive_transformed_data
+            poke_for_transformed_files
+            >> create_tables
+            >> copy_tables
+            # >> archive_transformed_data
+        )
