@@ -1,3 +1,5 @@
+DROP TABLE if exists stock;
+
 CREATE TABLE if not exists stock (
     id INT,
     code_departement TEXT,

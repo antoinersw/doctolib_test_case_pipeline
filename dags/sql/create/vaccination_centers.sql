@@ -1,3 +1,5 @@
+
+DROP TABLE if exists vaccination_centers;
 CREATE TABLE if not exists vaccination_centers (
     id INT,
     gid INTEGER,

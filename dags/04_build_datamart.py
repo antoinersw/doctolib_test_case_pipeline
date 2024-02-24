@@ -5,7 +5,8 @@ from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.operators.dummy import DummyOperator
 from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
-from airflow.sensors.filesystem import FileSensor
+from airflow.sensors.external_task import ExternalTaskSensor
+
 from airflow.exceptions import AirflowException
  
 
@@ -23,11 +24,18 @@ with DAG(
     "04_build_datamart",
     description="Responsible for building aggregated tables in postgres",
     start_date=airflow.utils.dates.days_ago(1),
-    schedule_interval="@once",
+    schedule_interval="@daily",
     default_args=default_args,
 ) as dag:
 
-    # create a branch operator => If the datamart has been initiated then skip the database creation and the dim date creation
+
+    ensure_database_is_loaded = ExternalTaskSensor(
+        task_id="sense_previous_dag_execution_task",
+        external_dag_id="03_copy_to_postgres",
+        external_task_id="validate_dag_task",
+        dag=dag,
+    )
+    
     create_dim_date = SQLExecuteQueryOperator(
         task_id=f"create_dim_date_task",
         sql=f"sql/create/dim_date.sql",

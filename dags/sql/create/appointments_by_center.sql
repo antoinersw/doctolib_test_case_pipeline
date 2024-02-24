@@ -1,3 +1,5 @@
+DROP TABLE if exists appointments_by_centers;
+
 CREATE TABLE if not exists appointments_by_centers (
     id INT,
     code_region TEXT,

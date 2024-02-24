@@ -9,3 +9,4 @@ data/transformed/*.csv
 
 # Ignore all files in the data/staging folder
 data/staging/*.csv
+old/

@@ -1,9 +1,9 @@
 from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.python import PythonOperator
-
+from airflow.exceptions import AirflowException
 from airflow.sensors.external_task import ExternalTaskSensor
-from airflow.models import Variable
+import airflow.utils.dates
 import csv
 
 
@@ -20,8 +20,8 @@ default_args = {
 with DAG(
     "02_transform_files",
     description="Responsible for fetching the daily new data from multiple sources",
-    start_date=datetime(2024, 2, 22),
-    schedule_interval="@once",
+    start_date=airflow.utils.dates.days_ago(1),
+    schedule_interval="@daily",
     default_args=default_args,
 ) as dag:
 
@@ -35,7 +35,7 @@ with DAG(
                 return separator
         return None
 
-    def _transform_all_csv():
+    def _transform_all_csv(**context):
         staging_folder_path = "data/staging"
         transform_folder_path = "data/transformed"
         # Get the list of csv files in the folder
@@ -47,7 +47,16 @@ with DAG(
             staging_file_path = os.path.join(staging_folder_path, file)
             transform_file_path = os.path.join(transform_folder_path, file)
             df = pd.read_csv(staging_file_path, sep=get_separator(staging_file_path))
+            # check # lines  > 0
+            if df.count() > 0:
+                raise AirflowException(f"File {file} contains 0 row !")
+            # add the execution_date
+            df["execution_date"] = context["execution_date"].strftime(
+                "%Y-%m-%d %H:%M:%S"
+            )
 
+            df.rename(columns={df.columns[0]: "id"}, inplace=True)
+            
             df.to_csv(
                 transform_file_path,
                 sep=",",

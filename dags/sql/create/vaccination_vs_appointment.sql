@@ -1,3 +1,4 @@
+DROP TABLE if exists vaccination_vs_appointments;
 CREATE TABLE if not exists vaccination_vs_appointments (
     id INT,
     id_centre TEXT,
