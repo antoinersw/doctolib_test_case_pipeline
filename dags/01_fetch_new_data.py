@@ -63,28 +63,36 @@ with DAG(
                 return separator
         return None
 
+
+    def verify_hash(csv_text, previous_hash):
+        
+         
+        csv_hash = hashlib.md5(csv_text.encode()).hexdigest()  # Encode the string before hashing
+
+        return previous_hash == csv_hash
+    
     def _fetch_data(**context):
         # Function to retrieve data from the CSV file
         csv_url = context["csv_url"]
-        header = {"Content-Type": "text/csv"}
+        header = {"Content-Type": "text/csv","charset":"utf-8"}
         try:
             response = requests.get(csv_url, headers=header)
-            response.raise_for_status()  # Raise an exception if the request was unsuccessful
+ 
             csv_content = response.content
             encoding = chardet.detect(csv_content)["encoding"]
             csv_text = response.text
 
             # Write the content to a file in a specific folder
             folder_path = "data/staging"
-            os.makedirs(
-                folder_path, exist_ok=True
-            )  # Create the folder if it doesn't exist
+         
             file_name = context["file_name"] + ".csv"
             file_path = os.path.join(folder_path, file_name)
 
             # Create a file-like object from the CSV content string
             csv_file = StringIO(csv_text)
 
+            if verify_hash(csv_text,previous_hash) :
+                return False
             # Read the CSV content using pandas
             df = pd.read_csv(
                 csv_file,
@@ -100,44 +108,12 @@ with DAG(
             # Raise an exception with the error message
             raise AirflowException(f"Failed to fetch data from {csv_url}: {str(e)}")
 
-    def _verify_hash(**context):
-        # Function to compare the hash of the retrieved data with the previous hash
-        folder_path = "data/staging"
-        file_name = context["file_name"] + ".csv"
-        file_path = os.path.join(folder_path, file_name)
-        with open(file_path, "r") as f:
-            csv_data = f.read()  # Use f.read() to read the content of the file
-        csv_hash = hashlib.md5(
-            csv_data.encode(encoding="utf-8")
-        ).hexdigest()  # Encode the string before hashing
-        previous_hash = context["previous_hash"]
+  
 
-        if previous_hash == csv_hash:
-            # The hash is the same as the previous hash
-            raise AirflowException("No changes detected")
-        else:
-            # The hash is either "first time" or it is different from the previous hash
-            previous_hash = Variable.set(
-                f"previous_hash_{context['file_name']}", csv_hash
-            )
-            return "new_data"
 
-    ensure_success = DummyOperator(
-        task_id="ensure_success_task", trigger_rule="all_success", dag=dag
-    )
+ 
 
-    # Créer une tâche pour envoyer un email si la tâche ensure_success ne se termine pas avec succès
-    # https://hevodata.com/learn/airflow-emailoperator/
-    send_email_on_fail = EmailOperator(
-        conn_id=None,  # TODO
-        task_id="send_email_on_fail_task",
-        to="antoine.rsw@gmail.com",
-        subject="[FAILURE] Data source could not be retrieved",
-        html_content=" Error occured on {{ds}}. Please check the logs for more information.",
-        trigger_rule="one_failed",
-    
-        dag=dag,
-    )
+
 
     for csv_url, previous_hash, file_name in [
         (
@@ -169,18 +145,30 @@ with DAG(
         fetch_data_task = PythonOperator(
             task_id=f"fetch_data_{file_name}",
             python_callable=_fetch_data,
-            op_kwargs={"csv_url": csv_url, "file_name": file_name},
+            op_kwargs={"csv_url": csv_url, "file_name": file_name,"previous_hash": previous_hash},
             retries=1,
             sla=timedelta(minutes=5),
             dag=dag,
         )
 
-        verify_hash_task = PythonOperator(
-            task_id=f"verify_hash_{file_name}",
-            python_callable=_verify_hash,
-            op_kwargs={"previous_hash": previous_hash, "file_name": file_name},
-            retries=0,
+        # verify_hash_task = PythonOperator(
+        #     task_id=f"verify_hash_{file_name}",
+        #     python_callable=_verify_hash,
+        #     op_kwargs={"previous_hash": previous_hash, "file_name": file_name},
+        #     retries=0,
+        #     dag=dag,
+        # )
+            # Créer une tâche pour envoyer un email si la tâche ensure_success ne se termine pas avec succès
+        # https://hevodata.com/learn/airflow-emailoperator/
+        send_email_on_fail = EmailOperator(
+            conn_id=None,  # TODO
+            task_id=f"send_email_on_fail_{file_name}_task",
+            to="antoine.rsw@gmail.com",
+            subject="[FAILURE] Data source could not be retrieved",
+            html_content=" Error occured on {{ds}}. Please check the logs for more information.",
+            trigger_rule="one_failed",
+        
             dag=dag,
         )
 
-        fetch_data_task >> verify_hash_task >> ensure_success >> send_email_on_fail
+        fetch_data_task >>  send_email_on_fail 

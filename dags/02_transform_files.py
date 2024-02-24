@@ -7,7 +7,7 @@ import airflow.utils.dates
 import csv
 from airflow.sensors.filesystem import FileSensor
 from airflow.models import Variable
-
+import ast
 import pandas as pd
 import os
 
@@ -35,6 +35,9 @@ with DAG(
             if all(separator in line for line in lines):
                 return separator
         return None
+ 
+ 
+ 
 
     def _transform_all_csv(**context):
         staging_folder_path = "data/staging"
@@ -66,9 +69,13 @@ with DAG(
                 quoting=csv.QUOTE_MINIMAL,
                 index=False
             )
+    def _delete_staging_file(**context):
+        file_path = f"data/staging/{context['file_name']}.csv"
+        os.remove(file_path)
+            
 
     def get_csv_filename():
-        import ast
+
         csv_filenames = ast.literal_eval(Variable.get("file_names"))
         return csv_filenames
 
@@ -89,4 +96,10 @@ with DAG(
             python_callable=_transform_all_csv,
             dag=dag,
         )
-        sense_files_dag_execution >> transform_all_csv
+        delete_staging_file = PythonOperator(
+            task_id=f"delete_staging_{file_name}_task",
+            python_callable=_delete_staging_file,
+            op_kwargs={'file_name':file_name},
+            dag=dag,
+        )
+        sense_files_dag_execution >> transform_all_csv >>delete_staging_file
