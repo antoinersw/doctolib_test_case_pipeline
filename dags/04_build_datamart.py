@@ -8,7 +8,6 @@ from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
 from airflow.sensors.external_task import ExternalTaskSensor
 
 from airflow.exceptions import AirflowException
- 
 
 
 # requêter les tables
@@ -28,14 +27,14 @@ with DAG(
     default_args=default_args,
 ) as dag:
 
-
     ensure_database_is_loaded = ExternalTaskSensor(
         task_id="sense_previous_dag_execution_task",
         external_dag_id="03_copy_to_postgres",
         external_task_id="validate_dag_task",
+        timeout=3600,
         dag=dag,
     )
-    
+
     create_dim_date = SQLExecuteQueryOperator(
         task_id=f"create_dim_date_task",
         sql=f"sql/create/dim_date.sql",
@@ -64,12 +63,16 @@ with DAG(
     )
 
     refresh_powerbi_dataset = DummyOperator(
-        task_id='refresh_powerbi_dataset_task'
-        ,dag=dag
+        task_id="refresh_powerbi_dataset_task",
+        dag=dag,
         # At the end of the pipeline we could add a task or another DAG to trigger power bi dataset to refresh. This would guarantee great SLAs !
         # Since I wont host that docker implementation of that pipeline I won't implement that hook
         # https://github.com/christo-olivier/airflow_powerbi_plugin/blob/master/powerbi_plugin/hooks/powerbi_hook.py
     )
-  
 
-    create_dim_date >> create_overload_appointment_monitoring >> create_aggreg_count_vax >> refresh_powerbi_dataset
+    (
+        create_dim_date
+        >> create_overload_appointment_monitoring
+        >> create_aggreg_count_vax
+        >> refresh_powerbi_dataset
+    )

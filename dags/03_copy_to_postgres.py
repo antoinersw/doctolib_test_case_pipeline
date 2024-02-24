@@ -31,8 +31,8 @@ with DAG(
         filepath="data/transformed",
         fs_conn_id="fs_transformed",
         poke_interval=60 * 10,  # Vérifier toutes les 10 minutes
-        timeout=24 * 60 * 60,
-        retries=4,
+        timeout=3600,
+        retries=0,
         mode="reschedule",
         soft_fail=True,
         dag=dag,
@@ -41,38 +41,37 @@ with DAG(
     # get all files from transformed folder
     def get_csv_filename():
         import ast
-        csv_filenames =  ast.literal_eval(Variable.get('file_names'))
-        return csv_filenames
 
+        csv_filenames = ast.literal_eval(Variable.get("file_names"))
+        return csv_filenames
 
     def _move_to_archive(**context):
         transformed_path = "data/transformed"
         archive_path = "data/archived"
-        today_date = context['execution_date'].strftime('%Y-%m-%d')
-        
+        today_date = context["execution_date"].strftime("%Y-%m-%d")
+
         # Get the filename from the context
         filename = f'{context["filename"]}_ds.csv'
-       
- 
+
         # Construct the new filename with today's date
         new_filename = f'{filename.split(".csv")[0]}_{today_date}.csv'
- 
-         
+
         try:
-        # Move the file to the archive directory with the new filename
-            shutil.move(f'{transformed_path}/{filename}', f'{archive_path}/{new_filename}')
+            # Move the file to the archive directory with the new filename
+            shutil.move(
+                f"{transformed_path}/{filename}", f"{archive_path}/{new_filename}"
+            )
         except FileNotFoundError:
 
             raise AirflowException(f"{filename} not found in {transformed_path}")
- 
+
     validate_dag = DummyOperator(
-            task_id=f"validate_dag_task",
-            trigger_rule="all_success",
-            dag=dag,
-        )
-    
-   
-    for filename in get_csv_filename("data/transformed"):
+        task_id=f"validate_dag_task",
+        trigger_rule="all_success",
+        dag=dag,
+    )
+
+    for filename in get_csv_filename():
         # CREATE tables if exists
         create_tables = SQLExecuteQueryOperator(
             task_id=f"create_{filename}_task",
@@ -82,7 +81,7 @@ with DAG(
             return_last=False,
             dag=dag,
         )
-    
+
         copy_tables = SQLExecuteQueryOperator(
             task_id=f"copy_{filename}_task",
             conn_id="postgres_db",
@@ -94,11 +93,10 @@ with DAG(
         archive_transformed_data = PythonOperator(
             task_id=f"archive_transformed_data_task_{filename}",
             python_callable=_move_to_archive,
-            op_kwargs={"filename":filename},
+            op_kwargs={"filename": filename},
             dag=dag,
         )
 
-        
         (
             poke_for_transformed_files
             >> create_tables
@@ -106,5 +104,3 @@ with DAG(
             >> archive_transformed_data
             >> validate_dag
         )
-
-   

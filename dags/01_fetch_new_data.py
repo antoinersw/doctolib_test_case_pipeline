@@ -24,12 +24,11 @@ default_args = {
 with DAG(
     "01_fetch_new_data",
     description="Responsible for fetching the daily new data from multiple sources",
-    start_date=airflow.utils.dates.days_ago(1), 
+    start_date=airflow.utils.dates.days_ago(1),
     schedule_interval="@daily",
     default_args=default_args,
 ) as dag:
 
-  
     ###################
     # Stored Data source - Are init each time the docker run
     ###################
@@ -53,16 +52,17 @@ with DAG(
     previous_hash_vaccination_stock_ds = Variable.get(
         "previous_hash_vaccination_stock_ds"
     )
+
     def get_separator(file):
         # Read the first lines of the file
-        lines =  file.splitlines()
+        lines = file.splitlines()
         for separator in [",", ";"]:
             if all(separator in line for line in lines):
                 return separator
         return None
 
     def _fetch_data(**context):
-    # Function to retrieve data from the CSV file
+        # Function to retrieve data from the CSV file
         csv_url = context["csv_url"]
         header = {"Content-Type": "text/csv"}
         try:
@@ -74,7 +74,9 @@ with DAG(
 
             # Write the content to a file in a specific folder
             folder_path = "data/staging"
-            os.makedirs(folder_path, exist_ok=True)  # Create the folder if it doesn't exist
+            os.makedirs(
+                folder_path, exist_ok=True
+            )  # Create the folder if it doesn't exist
             file_name = context["file_name"] + ".csv"
             file_path = os.path.join(folder_path, file_name)
 
@@ -82,10 +84,15 @@ with DAG(
             csv_file = StringIO(csv_text)
 
             # Read the CSV content using pandas
-            df = pd.read_csv(csv_file, sep=get_separator(csv_text), encoding=encoding, on_bad_lines='skip')
+            df = pd.read_csv(
+                csv_file,
+                sep=get_separator(csv_text),
+                encoding=encoding,
+                on_bad_lines="skip",
+            )
 
             # Write the DataFrame to a CSV file
-            df.to_csv(file_path, encoding='utf-8', sep=',', quoting=csv.QUOTE_MINIMAL)
+            df.to_csv(file_path, encoding="utf-8", sep=",", quoting=csv.QUOTE_MINIMAL)
 
         except (requests.exceptions.RequestException, UnicodeDecodeError) as e:
             # Raise an exception with the error message
@@ -99,7 +106,7 @@ with DAG(
         with open(file_path, "r") as f:
             csv_data = f.read()  # Use f.read() to read the content of the file
         csv_hash = hashlib.md5(
-            csv_data.encode(encoding='utf-8')
+            csv_data.encode(encoding="utf-8")
         ).hexdigest()  # Encode the string before hashing
         previous_hash = context["previous_hash"]
 

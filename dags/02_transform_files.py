@@ -56,7 +56,7 @@ with DAG(
             )
 
             df.rename(columns={df.columns[0]: "id"}, inplace=True)
-            
+
             df.to_csv(
                 transform_file_path,
                 sep=",",
@@ -69,6 +69,7 @@ with DAG(
         task_id="sense_previous_dag_execution_task",
         external_dag_id="01_fetch_new_data",
         external_task_id="ensure_success_task",
+        timeout=3600,
         dag=dag,
     )
 
