@@ -17,7 +17,6 @@ default_args = {
     "retries": 0,
 }
 
-
 with DAG(
     "02_transform_files",
     description="Responsible for fetching the daily new data from multiple sources",
@@ -38,7 +37,11 @@ with DAG(
  
  
  
+    def get_csv_filename():
 
+        csv_filenames = ast.literal_eval(Variable.get("file_names"))
+        return csv_filenames
+    
     def _transform_all_csv(**context):
         staging_folder_path = "data/staging"
         transform_folder_path = "data/transformed"
@@ -58,10 +61,13 @@ with DAG(
             df["execution_date"] = context["execution_date"].strftime(
                 "%Y-%m-%d %H:%M:%S"
             )
+
  
             df.insert(0, 'id', range(1, len(df) + 1))
             if 'Unnamed: 0' in df.columns:
                 df.drop('Unnamed: 0', axis=1, inplace=True)
+            
+            
             df.to_csv(
                 transform_file_path,
                 sep=",",
@@ -74,10 +80,7 @@ with DAG(
         os.remove(file_path)
             
 
-    def get_csv_filename():
 
-        csv_filenames = ast.literal_eval(Variable.get("file_names"))
-        return csv_filenames
 
     for file_name in get_csv_filename():
         sense_files_dag_execution = FileSensor(

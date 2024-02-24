@@ -1,3 +1,4 @@
+drop table if exists geo_etendue;
 CREATE TABLE if not exists geo_etendue (
   code_commune_INSEE TEXT,
   nom_commune_postal TEXT,

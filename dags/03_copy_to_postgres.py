@@ -34,29 +34,11 @@ with DAG(
         csv_filenames = ast.literal_eval(Variable.get("file_names"))
         return csv_filenames
       
-    def _move_to_archive(**context):
-        transformed_path = "data/transformed"
-        archive_path = "data/archived"
-        today_date = context["execution_date"].strftime("%Y-%m-%d")
-
-        # Get the filename from the context
-        filename = f'{context["filename"]}_ds.csv'
-
-        # Construct the new filename with today's date
-        new_filename = f'{filename.split(".csv")[0]}_{today_date}.csv'
-
-        try:
-            # Move the file to the archive directory with the new filename
-            shutil.move(
-                f"{transformed_path}/{filename}", f"{archive_path}/{new_filename}"
-            )
-        except FileNotFoundError:
-
-            raise AirflowException(f"{filename} not found in {transformed_path}")
+ 
 
     validate_dag = DummyOperator(
         task_id=f"validate_dag_task",
-        trigger_rule="all_success",
+        trigger_rule="all_done",
         dag=dag,
     )
 
@@ -67,7 +49,7 @@ with DAG(
             filepath=f"data/transformed/{filename}.csv",
             fs_conn_id="fs_transformed",
             poke_interval=30,  # Vérifier toutes les 10 minutes
-            timeout=3600,
+            timeout=60,
             retries=0,
             mode="reschedule",
             soft_fail=True,

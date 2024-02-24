@@ -74,14 +74,15 @@ with DAG(
     def _fetch_data(**context):
         # Function to retrieve data from the CSV file
         csv_url = context["csv_url"]
-        header = {"Content-Type": "text/csv","charset":"utf-8"}
+        header = {'Content-Type': 'text/csv', 'charset': 'utf-8'}
         try:
             response = requests.get(csv_url, headers=header)
  
             csv_content = response.content
             encoding = chardet.detect(csv_content)["encoding"]
             csv_text = response.text
-
+            # HERE
+            csv_text = response.content.decode(encoding)
             # Write the content to a file in a specific folder
             folder_path = "data/staging"
          
@@ -107,12 +108,6 @@ with DAG(
         except (requests.exceptions.RequestException, UnicodeDecodeError) as e:
             # Raise an exception with the error message
             raise AirflowException(f"Failed to fetch data from {csv_url}: {str(e)}")
-
-  
-
-
- 
-
 
 
     for csv_url, previous_hash, file_name in [
@@ -142,6 +137,7 @@ with DAG(
             "geo_etendue_ds",
         ),
     ]:
+        
         fetch_data_task = PythonOperator(
             task_id=f"fetch_data_{file_name}",
             python_callable=_fetch_data,
@@ -150,15 +146,8 @@ with DAG(
             sla=timedelta(minutes=5),
             dag=dag,
         )
-
-        # verify_hash_task = PythonOperator(
-        #     task_id=f"verify_hash_{file_name}",
-        #     python_callable=_verify_hash,
-        #     op_kwargs={"previous_hash": previous_hash, "file_name": file_name},
-        #     retries=0,
-        #     dag=dag,
-        # )
-            # Créer une tâche pour envoyer un email si la tâche ensure_success ne se termine pas avec succès
+ 
+        # Créer une tâche pour envoyer un email si la tâche ensure_success ne se termine pas avec succès
         # https://hevodata.com/learn/airflow-emailoperator/
         send_email_on_fail = EmailOperator(
             conn_id=None,  # TODO
