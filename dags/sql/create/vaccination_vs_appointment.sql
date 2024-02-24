@@ -11,7 +11,8 @@ CREATE TABLE if not exists vaccination_vs_appointments (
     nom_centre TEXT,
     nombre_ucd TEXT,
     doses_allouees TEXT,
-    rdv_pris TEXT
+    rdv_pris TEXT,
+    execution_date DATE
 );
 CREATE INDEX if not exists vaccination_vs_appointments_index
 ON vaccination_vs_appointments(id_centre,code_departement,date_debut_semaine);

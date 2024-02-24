@@ -9,7 +9,7 @@ CREATE TABLE if not exists stock (
     finess TEXT,
     type_de_vaccin TEXT,
     nb_ucd INTEGER,
-    nb_doses INTEGER,
- 
-    date DATE
+    nb_doses INTEGER, 
+    date DATE,
+      execution_date DATE
 );

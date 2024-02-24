@@ -5,7 +5,8 @@ from airflow.exceptions import AirflowException
 from airflow.sensors.external_task import ExternalTaskSensor
 import airflow.utils.dates
 import csv
-
+from airflow.sensors.filesystem import FileSensor
+from airflow.models import Variable
 
 import pandas as pd
 import os
@@ -46,41 +47,46 @@ with DAG(
         for file in csv_files:
             staging_file_path = os.path.join(staging_folder_path, file)
             transform_file_path = os.path.join(transform_folder_path, file)
-            df = pd.read_csv(staging_file_path, sep=get_separator(staging_file_path))
+            df = pd.read_csv(staging_file_path,encoding='utf-8', sep=get_separator(staging_file_path),low_memory=False)
             # check # lines  > 0
-            if df.count() > 0:
-                raise AirflowException(f"File {file} contains 0 row !")
+            if df.empty:
+                raise AirflowException(f"File : {file} contains 0 row !")
             # add the execution_date
             df["execution_date"] = context["execution_date"].strftime(
                 "%Y-%m-%d %H:%M:%S"
             )
-
-            df.rename(columns={df.columns[0]: "id"}, inplace=True)
-
+ 
+            df.insert(0, 'id', range(1, len(df) + 1))
+            if 'Unnamed: 0' in df.columns:
+                df.drop('Unnamed: 0', axis=1, inplace=True)
             df.to_csv(
                 transform_file_path,
                 sep=",",
                 encoding="utf-8",
                 quoting=csv.QUOTE_MINIMAL,
+                index=False
             )
 
-    # Listen to the external task from DAG 01 and trigger on success
-    sense_previous_dag_execution = ExternalTaskSensor(
-        task_id="sense_previous_dag_execution_task",
-        external_dag_id="01_fetch_new_data",
-        external_task_id="ensure_success_task",
-        timeout=3600,
-        dag=dag,
-    )
+    def get_csv_filename():
+        import ast
+        csv_filenames = ast.literal_eval(Variable.get("file_names"))
+        return csv_filenames
 
-    # Normalize the csv and move it to the transformed folder
-    # TODO Améliorer largement le process de cleaning
-    transform_all_csv = PythonOperator(
-        task_id="transform_all_csv_task",
-        python_callable=_transform_all_csv,
-        dag=dag,
-    )
-
-    # Verifier que l'on a tous les fichiers que l'on veut
-
-    sense_previous_dag_execution >> transform_all_csv
+    for file_name in get_csv_filename():
+        sense_files_dag_execution = FileSensor(
+            task_id=f"poke_for_staged_{file_name}",
+            filepath=f"data/staging/{file_name}.csv",
+            fs_conn_id="fs_staging",
+            poke_interval=60 * 10,  # Vérifier toutes les 10 minutes
+            timeout=3600,
+            retries=0,
+            mode="reschedule",
+            soft_fail=True,
+            dag=dag,
+        )
+        transform_all_csv = PythonOperator(
+            task_id=f"transform_{file_name}_task",
+            python_callable=_transform_all_csv,
+            dag=dag,
+        )
+        sense_files_dag_execution >> transform_all_csv

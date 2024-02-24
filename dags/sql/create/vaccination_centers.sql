@@ -44,7 +44,8 @@ CREATE TABLE if not exists vaccination_centers (
     centre_svi_repondeur TEXT,
     centre_fermeture TEXT,
     reserve_professionels_sante BOOLEAN,
-    centre_type TEXT
+    centre_type TEXT,
+    execution_date DATE
 );
 CREATE INDEX if not exists vaccination_centers_index
 ON vaccination_centers (gid, com_cp,date_fermeture,date_ouverture);

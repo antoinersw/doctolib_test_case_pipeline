@@ -11,7 +11,8 @@ CREATE TABLE if not exists appointments_by_centers (
     date_debut_semaine DATE,
     nb INTEGER,
     nb_rdv_cnam INTEGER,
-    nb_rdv_rappel INTEGER
+    nb_rdv_rappel INTEGER,
+    execution_date DATE
 );
 CREATE INDEX if not exists appointments_by_centers_index
 ON appointments_by_centers (id_centre,date_debut_semaine,departement);

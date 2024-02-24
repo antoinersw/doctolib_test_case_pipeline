@@ -27,6 +27,7 @@ with DAG(
     start_date=airflow.utils.dates.days_ago(1),
     schedule_interval="@daily",
     default_args=default_args,
+    concurrency=10
 ) as dag:
 
     ###################
@@ -40,18 +41,18 @@ with DAG(
     ############
     # Stored Hash - Are stored with value == True to ease the first run
     ############
-    previous_hash_vaccination_vs_appointment_ds = Variable.get(
-        "previous_hash_vaccination_vs_appointment_ds"
-    )
-    previous_hash_vaccination_centers_ds = Variable.get(
-        "previous_hash_vaccination_centers_ds"
-    )
-    previous_hash_appointments_by_center_ds = Variable.get(
-        "previous_hash_appointments_by_center_ds"
-    )
-    previous_hash_vaccination_stock_ds = Variable.get(
-        "previous_hash_vaccination_stock_ds"
-    )
+    previous_hash_vaccination_vs_appointment_ds =True # Variable.get(
+       #  "previous_hash_vaccination_vs_appointment_ds"
+     #)
+    previous_hash_vaccination_centers_ds = True #Variable.get(
+      #   "previous_hash_vaccination_centers_ds"
+   #  )
+    previous_hash_appointments_by_center_ds = True #Variable.get(
+    #     "previous_hash_appointments_by_center_ds"
+   #  )
+    previous_hash_vaccination_stock_ds = True #Variable.get(
+    #     "previous_hash_vaccination_stock_ds"
+    # )
 
     def get_separator(file):
         # Read the first lines of the file
@@ -133,6 +134,7 @@ with DAG(
         subject="[FAILURE] Data source could not be retrieved",
         html_content=" Error occured on {{ds}}. Please check the logs for more information.",
         trigger_rule="one_failed",
+    
         dag=dag,
     )
 
@@ -163,6 +165,7 @@ with DAG(
             python_callable=_fetch_data,
             op_kwargs={"csv_url": csv_url, "file_name": file_name},
             retries=1,
+            sla=timedelta(minutes=5),
             dag=dag,
         )
 
