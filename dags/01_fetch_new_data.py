@@ -27,7 +27,7 @@ with DAG(
     start_date=airflow.utils.dates.days_ago(1),
     schedule_interval="@daily",
     default_args=default_args,
-    concurrency=10
+    concurrency=20
 ) as dag:
 
     ###################
@@ -37,6 +37,7 @@ with DAG(
     vaccination_centers_ds = Variable.get("vaccination_centers_ds")
     vaccination_stock_ds = Variable.get("vaccination_stock_ds")
     vaccination_vs_appointment_ds = Variable.get("vaccination_vs_appointment_ds")
+    geo_etendue_ds= Variable.get('geo_etendue')
 
     ############
     # Stored Hash - Are stored with value == True to ease the first run
@@ -158,6 +159,11 @@ with DAG(
             vaccination_vs_appointment_ds,
             previous_hash_vaccination_vs_appointment_ds,
             "vaccination_vs_appointment_ds",
+        ),
+         (
+            geo_etendue_ds,
+            True,
+            "geo_etendue_ds",
         ),
     ]:
         fetch_data_task = PythonOperator(

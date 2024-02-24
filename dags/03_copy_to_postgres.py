@@ -22,7 +22,7 @@ with DAG(
     start_date=airflow.utils.dates.days_ago(1),
     schedule_interval="@daily",
     default_args=default_args,
-    concurrency=10
+    concurrency=20
 ) as dag:
 
    
@@ -66,7 +66,7 @@ with DAG(
             task_id=f"poke_for_transformed_{filename}",
             filepath=f"data/transformed/{filename}.csv",
             fs_conn_id="fs_transformed",
-            poke_interval=60 * 2,  # Vérifier toutes les 10 minutes
+            poke_interval=30,  # Vérifier toutes les 10 minutes
             timeout=3600,
             retries=0,
             mode="reschedule",
@@ -93,18 +93,11 @@ with DAG(
             sla=timedelta(minutes=10),
             dag=dag,
         )
-        archive_transformed_data = PythonOperator(
-            task_id=f"archive_transformed_data_task_{filename_short}",
-            python_callable=_move_to_archive,
-            op_kwargs={"filename": filename_short},
-            
-            dag=dag,
-        )
+
 
         (
             poke_for_transformed_files
             >> create_tables
             >> copy_tables
-            >> archive_transformed_data
             >> validate_dag
         )

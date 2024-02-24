@@ -77,7 +77,7 @@ with DAG(
             task_id=f"poke_for_staged_{file_name}",
             filepath=f"data/staging/{file_name}.csv",
             fs_conn_id="fs_staging",
-            poke_interval=60 * 10,  # Vérifier toutes les 10 minutes
+            poke_interval=30,  # Vérifier toutes les 10 minutes
             timeout=3600,
             retries=0,
             mode="reschedule",
