@@ -1,11 +1,15 @@
 {
     "appointments_by_center_ds": "https://www.data.gouv.fr/fr/datasets/r/dc2fd531-2314-44bb-b0a9-39e621e4b12c",
+    "file_names": "['appointments_by_center_ds','vaccination_centers_ds','vaccination_stock_ds','vaccination_vs_appointment_ds','geo_etendue_ds','type_de_vaccin_tranche_dage_et_departement_ds']",
+    "geo_etendue": "https://www.data.gouv.fr/fr/datasets/r/dbe8a621-a9c4-4bc3-9cae-be1699c5ff25",
+    "previous_hash_appointments_by_center_ds": "True",
+    "previous_hash_geo_etendue_ds": "True",
+    "previous_hash_previous_hash_vaccination_stock_ds": "True",
+    "previous_hash_vaccination_centers_ds": "True",
+    "previous_hash_vaccination_stock_ds": "True",
+    "previous_hash_vaccination_vs_appointment_ds": "True",
+    "type_de_vaccin_tranche_dage_et_departement_ds": "https://www.data.gouv.fr/fr/datasets/r/db612c6b-699e-4249-a1dc-6334a8420eec",
     "vaccination_centers_ds": "https://www.data.gouv.fr/fr/datasets/r/5cb21a85-b0b0-4a65-a249-806a040ec372",
     "vaccination_stock_ds": "https://www.data.gouv.fr/fr/datasets/r/2b1523f0-d8bf-426f-bf1f-9974c9cccb53",
-    "vaccination_vs_appointment_ds": "https://www.data.gouv.fr/fr/datasets/r/b7bd49cd-904c-4c5d-b60f-018b51df9b0e",
-    "previous_hash_vaccination_vs_appointment_ds": "True",
-    "previous_hash_vaccination_centers_ds": "True",
-    "previous_hash_appointments_by_center_ds": "True",
-    "previous_hash_vaccination_stock_ds": "True",
-    "load_type":"increment"
+    "vaccination_vs_appointment_ds": "https://www.data.gouv.fr/fr/datasets/r/b7bd49cd-904c-4c5d-b60f-018b51df9b0e"
 }

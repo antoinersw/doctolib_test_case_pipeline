@@ -37,23 +37,14 @@ with DAG(
     vaccination_centers_ds = Variable.get("vaccination_centers_ds")
     vaccination_stock_ds = Variable.get("vaccination_stock_ds")
     vaccination_vs_appointment_ds = Variable.get("vaccination_vs_appointment_ds")
+    type_de_vaccin_tranche_dage_et_departement_ds = Variable.get('type_de_vaccin_tranche_dage_et_departement_ds')
     geo_etendue_ds= Variable.get('geo_etendue')
+
 
     ############
     # Stored Hash - Are stored with value == True to ease the first run
     ############
-    previous_hash_vaccination_vs_appointment_ds =True # Variable.get(
-       #  "previous_hash_vaccination_vs_appointment_ds"
-     #)
-    previous_hash_vaccination_centers_ds = True #Variable.get(
-      #   "previous_hash_vaccination_centers_ds"
-   #  )
-    previous_hash_appointments_by_center_ds = True #Variable.get(
-    #     "previous_hash_appointments_by_center_ds"
-   #  )
-    previous_hash_vaccination_stock_ds = True #Variable.get(
-    #     "previous_hash_vaccination_stock_ds"
-    # )
+    
 
     def get_separator(file):
         # Read the first lines of the file
@@ -77,7 +68,7 @@ with DAG(
         header = {'Content-Type': 'text/csv', 'charset': 'utf-8'}
         try:
             response = requests.get(csv_url, headers=header)
- 
+            previous_hash=context['previous_hash']
             csv_content = response.content
             encoding = chardet.detect(csv_content)["encoding"]
             csv_text = response.text
@@ -93,7 +84,7 @@ with DAG(
             csv_file = StringIO(csv_text)
 
             if verify_hash(csv_text,previous_hash) :
-                return False
+                return "Content was similar than last run"
             # Read the CSV content using pandas
             df = pd.read_csv(
                 csv_file,
@@ -109,39 +100,35 @@ with DAG(
             # Raise an exception with the error message
             raise AirflowException(f"Failed to fetch data from {csv_url}: {str(e)}")
 
+    ###################
+    # Stored Data source - Are init each time the docker run
+    ###################
+    data_sources = {
+        "appointments_by_center_ds": Variable.get("appointments_by_center_ds"),
+        "vaccination_centers_ds": Variable.get("vaccination_centers_ds"),
+        "vaccination_stock_ds": Variable.get("vaccination_stock_ds"),
+        "vaccination_vs_appointment_ds": Variable.get("vaccination_vs_appointment_ds"),
+        "type_de_vaccin_tranche_dage_et_departement_ds": Variable.get("type_de_vaccin_tranche_dage_et_departement_ds"),
+        "geo_etendue_ds": Variable.get("geo_etendue"),
+    }
 
-    for csv_url, previous_hash, file_name in [
-        (
-            appointments_by_center_ds,
-            previous_hash_appointments_by_center_ds,
-            "appointments_by_center_ds",
-        ),
-        (
-            vaccination_centers_ds,
-            previous_hash_vaccination_centers_ds,
-            "vaccination_centers_ds",
-        ),
-        (
-            vaccination_stock_ds,
-            previous_hash_vaccination_stock_ds,
-            "vaccination_stock_ds",
-        ),
-        (
-            vaccination_vs_appointment_ds,
-            previous_hash_vaccination_vs_appointment_ds,
-            "vaccination_vs_appointment_ds",
-        ),
-         (
-            geo_etendue_ds,
-            True,
-            "geo_etendue_ds",
-        ),
-    ]:
+    ############
+    # Stored Hash - Are stored with value == True to ease the first run
+    ############
+    previous_hashes = {
+        "appointments_by_center_ds":  Variable.get("previous_hash_appointments_by_center_ds"),
+        "vaccination_centers_ds":  Variable.get("previous_hash_vaccination_centers_ds"),
+        "vaccination_stock_ds":  Variable.get("previous_hash_vaccination_stock_ds"),
+        "vaccination_vs_appointment_ds":  Variable.get("previous_hash_vaccination_vs_appointment_ds"),
+        "type_de_vaccin_tranche_dage_et_departement_ds":  Variable.get("previous_hash_type_de_vaccin_tranche_dage_et_departement_ds"),
+        "geo_etendue_ds":  Variable.get("previous_hash_geo_etendue_ds"),
+    }
+    for   file_name,csv_url in data_sources.items():
         
         fetch_data_task = PythonOperator(
             task_id=f"fetch_data_{file_name}",
             python_callable=_fetch_data,
-            op_kwargs={"csv_url": csv_url, "file_name": file_name,"previous_hash": previous_hash},
+            op_kwargs={"csv_url": csv_url, "file_name": file_name,"previous_hash": previous_hashes[file_name]},
             retries=1,
             sla=timedelta(minutes=5),
             dag=dag,

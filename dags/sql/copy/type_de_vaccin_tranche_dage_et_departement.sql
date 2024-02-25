@@ -1,4 +1,5 @@
-COPY vaccination_data (
+COPY type_de_vaccin_tranche_dage_et_departement (
+    id,
     date_reference,
     semaine_injection,
     region_residence,
@@ -27,6 +28,6 @@ COPY vaccination_data (
     taux_cumu_rappeleli
     ,execution_date
 )
-FROM '/opt/data/transformed/type_de_vaccin_tranche_dage_et_departement_ds'
+FROM '/opt/data/transformed/type_de_vaccin_tranche_dage_et_departement_ds.csv'
 DELIMITER ','
 CSV HEADER;
