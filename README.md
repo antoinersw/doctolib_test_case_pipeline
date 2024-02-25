@@ -1,14 +1,8 @@
-# Documentation d'exploitation pour le projet Doctolib Test Case Pipeline
+
 <html>
 <head>
-<style>
-.center {
-  display: block;
-  margin-left: auto;
-  margin-right: auto;
-  width: 50%;
-}
-</style>
+ 
+ 
 </head>
 <body>
 
@@ -16,6 +10,8 @@
 
 </body>
 </html>
+
+# Documentation d'exploitation pour le projet Doctolib Test Case Pipeline
 
 ## Introduction
 
