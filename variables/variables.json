@@ -8,6 +8,7 @@
     "previous_hash_vaccination_centers_ds": "True",
     "previous_hash_vaccination_stock_ds": "True",
     "previous_hash_vaccination_vs_appointment_ds": "True",
+    "previous_hash_type_de_vaccin_tranche_dage_et_departement_ds":"True",
     "type_de_vaccin_tranche_dage_et_departement_ds": "https://www.data.gouv.fr/fr/datasets/r/db612c6b-699e-4249-a1dc-6334a8420eec",
     "vaccination_centers_ds": "https://www.data.gouv.fr/fr/datasets/r/5cb21a85-b0b0-4a65-a249-806a040ec372",
     "vaccination_stock_ds": "https://www.data.gouv.fr/fr/datasets/r/2b1523f0-d8bf-426f-bf1f-9974c9cccb53",
