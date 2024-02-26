@@ -1,8 +1,6 @@
-from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.exceptions import AirflowException
-from airflow.sensors.external_task import ExternalTaskSensor
 import airflow.utils.dates
 import csv
 from airflow.sensors.filesystem import FileSensor

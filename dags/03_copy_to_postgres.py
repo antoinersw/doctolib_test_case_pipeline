@@ -1,14 +1,10 @@
 import airflow.utils.dates
-from airflow.decorators import task
 from airflow import DAG
-from airflow.operators.python import PythonOperator
 from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
 from airflow.operators.dummy import DummyOperator
 from airflow.sensors.filesystem import FileSensor
-from airflow.exceptions import AirflowException
 from airflow.models import Variable
 from datetime import timedelta
-from airflow.operators.python import BranchPythonOperator
 
 default_args = {
     "owner": "airflow",
