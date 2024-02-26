@@ -76,7 +76,7 @@ Ce document fournit un guide d'exploitation pour le projet Doctolib Test Case Pi
 
 2. Connectez-vous à Airflow en utilisant les informations d'identification par défaut (utilisateur : `airflow`, mot de passe : `airflow`).
 
-3. Exécutez le DAG `doctolib_test_case_pipeline` pour lancer le pipeline ETL.
+3. Activer les DAG depuis l'UI pour lancer le pipeline ETL => ils se lanceront automatiquement car la start_date est réglée sur J-1
 
 ## Maintenance
 
